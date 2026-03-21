@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "@fontsource/inter/vietnamese.css";
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "My Ikigai",
-  description: "Decode your Sould. Find your Ikigai.",
+  title: "MyIkigai — Decode Your Soul. Build Your Path.",
+  description:
+    "Bridging destiny and digital intelligence. Discover your MBTI, decode your astrology, and get an AI-powered life roadmap.",
 };
 
 export default function RootLayout({
@@ -17,9 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className="antialiased">
-      </body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }
