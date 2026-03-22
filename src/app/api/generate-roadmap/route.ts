@@ -14,9 +14,11 @@ export async function POST(request: Request) {
     );
   }
 
+  const baseUrl = supabaseUrl.replace(/\/+$/, "");
+
   try {
     const res = await fetch(
-      `${supabaseUrl}/functions/v1/process-roadmap`,
+      `${baseUrl}/functions/v1/process-roadmap`,
       {
         method: "POST",
         headers: {

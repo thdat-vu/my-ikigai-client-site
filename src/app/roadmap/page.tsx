@@ -249,7 +249,7 @@ export default function RoadmapPage() {
     if (Object.keys(courses).length > 0) return;
     setLoadingCourses(true);
     try {
-      const res = await fetch("/api/find-courses", {
+      const res = await fetch("/api/find-courses-v2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(roadmap),
