@@ -66,20 +66,16 @@ export function StepConvergence() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = Math.min(prev + 1.5, done ? 100 : 90);
-        setGenerationProgress(next);
-        return next;
-      });
+      setProgress((prev) => Math.min(prev + 1.5, done ? 100 : 90));
     }, 150);
     return () => clearInterval(interval);
-  }, [done, setGenerationProgress]);
+  }, [done]);
 
   useEffect(() => {
-    if (progress >= 100) return;
+    setGenerationProgress(progress);
     const phaseAt = Math.floor((progress / 100) * PHASES.length);
     setPhaseIndex(Math.min(phaseAt, PHASES.length - 1));
-  }, [progress]);
+  }, [progress, setGenerationProgress]);
 
   const handleViewRoadmap = () => {
     router.push("/roadmap");

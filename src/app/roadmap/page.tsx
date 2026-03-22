@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Sparkles, BookOpen, ExternalLink, ChevronDown } from "lucide-react";
@@ -114,16 +114,18 @@ function QuarterCard({
         <AnimatePresence>
           {course && (
             <motion.a
+              key={quarter.focus_skill}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               href={course.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[11px] text-[#919bff] hover:text-[#5bf4de] transition-colors group"
+              className="flex items-center gap-1.5 text-[11px] text-[#5bf4de] hover:text-white transition-colors group"
             >
               <BookOpen className="w-3 h-3 shrink-0" />
               <span className="truncate">{course.title}</span>
+              <span className="text-[9px] text-[#8a94b0] shrink-0">({course.platform})</span>
               <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.a>
           )}
@@ -235,39 +237,87 @@ function YearCard({
   );
 }
 
+/* ─── Recommended Courses Section ─── */
+function CoursesSection({ courses }: { courses: Record<string, CourseInfo> }) {
+  const entries = Object.entries(courses);
+  if (entries.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="rounded-3xl bg-[#0f1d38] p-6 md:p-8 border border-[#5bf4de]/10"
+    >
+      <span className="text-[10px] uppercase tracking-[0.2em] text-[#5bf4de]/60 font-bold">
+        Recommended Courses
+      </span>
+      <p className="text-sm text-[#8a94b0] mt-1 mb-4">
+        Based on your Year 0 focus skills
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {entries.map(([skill, course]) => (
+          <a
+            key={skill}
+            href={course.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 p-4 rounded-2xl bg-[#192540]/80 border border-[#40485d]/20 hover:border-[#5bf4de]/30 transition-all group"
+          >
+            <BookOpen className="w-4 h-4 text-[#5bf4de] mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white truncate group-hover:text-[#5bf4de] transition-colors">
+                {course.title}
+              </p>
+              <p className="text-xs text-[#8a94b0] mt-0.5">
+                {skill} &middot; {course.platform}
+              </p>
+            </div>
+            <ExternalLink className="w-3.5 h-3.5 text-[#40485d] group-hover:text-[#5bf4de] transition-colors shrink-0 mt-0.5" />
+          </a>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Main Page ─── */
 export default function RoadmapPage() {
-  const { name, mbtiType, roadmap: storeRoadmap, courses, setCourses } = useOnboardingStore();
+  const { name, mbtiType, roadmap: storeRoadmap } = useOnboardingStore();
   const roadmap: Roadmap = storeRoadmap || DEMO_ROADMAP;
   const displayName = name || "Alex Chen";
   const displayMbti = mbtiType || "INTJ";
 
   const [expandedYear, setExpandedYear] = useState(0);
   const [loadingCourses, setLoadingCourses] = useState(false);
-
-  const fetchCourses = useCallback(async () => {
-    if (Object.keys(courses).length > 0) return;
-    setLoadingCourses(true);
-    try {
-      const res = await fetch("/api/find-courses-v2", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(roadmap),
-      });
-      const data = await res.json();
-      if (data.success && data.courses) {
-        setCourses(data.courses);
-      }
-    } catch {
-      // courses are supplementary, don't block UI
-    } finally {
-      setLoadingCourses(false);
-    }
-  }, [roadmap, courses, setCourses]);
+  const [localCourses, setLocalCourses] = useState<Record<string, CourseInfo>>({});
+  const hasFetchedCourses = useRef(false);
 
   useEffect(() => {
-    fetchCourses();
-  }, [fetchCourses]);
+    if (hasFetchedCourses.current) return;
+    hasFetchedCourses.current = true;
+
+    setLoadingCourses(true);
+
+    fetch("/api/find-courses-v2", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(roadmap),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.courses) {
+          const courseData: Record<string, CourseInfo> = data.courses;
+          setLocalCourses(courseData);
+        }
+      })
+      .catch((err) => {
+        console.error("[find-courses-v2] error:", err);
+      })
+      .finally(() => {
+        setLoadingCourses(false);
+      });
+  }, [roadmap]);
 
   return (
     <div className="min-h-screen bg-[#060e20] text-[#dee5ff]">
@@ -301,6 +351,18 @@ export default function RoadmapPage() {
           >
             <ProfileCard name={displayName} mbti={displayMbti} roadmap={roadmap} />
           </motion.div>
+
+          {/* Courses section — always visible after profile */}
+          {loadingCourses && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-xs text-[#5bf4de]/50 uppercase tracking-widest animate-pulse"
+            >
+              Discovering recommended courses...
+            </motion.p>
+          )}
+          <CoursesSection courses={localCourses} />
         </div>
       </section>
 
@@ -319,22 +381,12 @@ export default function RoadmapPage() {
                 index={i}
                 isExpanded={expandedYear === i}
                 onToggle={() => setExpandedYear(expandedYear === i ? -1 : i)}
-                courses={courses}
+                courses={localCourses}
                 loadingCourses={loadingCourses}
               />
             </motion.div>
           ))}
         </div>
-
-        {loadingCourses && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center mt-6 text-xs text-[#5bf4de]/50 uppercase tracking-widest animate-pulse"
-          >
-            Discovering recommended courses...
-          </motion.p>
-        )}
       </section>
 
       {/* Footer */}

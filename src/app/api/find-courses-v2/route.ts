@@ -13,42 +13,38 @@ export async function POST(request: Request) {
     );
   }
 
-  // Only send Year 0, Q1+Q2 to avoid timeout
   const year0 = roadmap.years?.[0];
-  if (!year0) {
+  if (!year0?.quarters?.length) {
     return NextResponse.json(
       { success: false, error: "No year data" },
       { status: 400 }
     );
   }
 
-  const trimmedRoadmap = {
-    summary: roadmap.summary,
-    current_age: roadmap.current_age,
-    years: [
-      {
-        year_label: year0.year_label,
-        year_age: year0.year_age,
-        title: year0.title,
-        energy_tag: year0.energy_tag,
-        yearly_energy: year0.yearly_energy,
-        quarters: year0.quarters.slice(0, 2),
-      },
-    ],
-  };
+  const skills = year0.quarters
+    .slice(0, 2)
+    .map((q: { focus_skill: string }) => q.focus_skill)
+    .filter(Boolean);
+
+  if (skills.length === 0) {
+    return NextResponse.json(
+      { success: false, error: "No skills found" },
+      { status: 400 }
+    );
+  }
 
   const baseUrl = supabaseUrl.replace(/\/+$/, "");
 
   try {
     const res = await fetch(
-      `${baseUrl}/functions/v1/process-find-courses`,
+      `${baseUrl}/functions/v1/process-find-courses-parallel`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify(trimmedRoadmap),
+        body: JSON.stringify({ skills }),
       }
     );
 
