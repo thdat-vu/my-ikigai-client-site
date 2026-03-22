@@ -1,53 +1,63 @@
+// Onboarding form data
 export interface OnboardingData {
   name: string;
   dateOfBirth: string;
   timeOfBirth: string;
-  birthLocation: string;
   mbtiType: string;
   mbtiSource: "selected" | "quiz";
+  personaGoal: string;
   quizAnswers?: number[];
 }
 
-export interface UserProfile {
-  id: string;
-  name: string;
-  date_of_birth: string;
-  time_of_birth: string | null;
-  birth_location: string | null;
-  mbti_type: string;
-  mbti_source: "selected" | "quiz";
-  created_at: string;
-}
-
-export interface RoadmapMilestone {
-  id: string;
-  quarter: string;
-  title: string;
-  description: string;
-  astroContext?: string;
-  type: "career" | "growth" | "relationship" | "spiritual";
-}
-
-export interface Roadmap {
-  id: string;
-  profile_id: string;
-  milestones: RoadmapMilestone[];
-  ai_response: Record<string, unknown>;
-  created_at: string;
-}
-
+// API request to Supabase Edge Function
 export interface GenerateRoadmapRequest {
   name: string;
-  dateOfBirth: string;
-  timeOfBirth?: string;
-  birthLocation?: string;
-  mbtiType: string;
-  mbtiSource: "selected" | "quiz";
-  quizAnswers?: number[];
+  dob: string;
+  tob: string;
+  mbti: string;
+  persona_goal: string;
 }
 
-export interface GenerateRoadmapResponse {
-  profileId: string;
-  roadmapId: string;
-  milestones: RoadmapMilestone[];
+// Quarter within a year
+export interface RoadmapQuarter {
+  label: string;
+  logic_action: string;
+  astral_energy: string;
+  focus_skill: string;
+}
+
+// Year in the 5-year plan
+export interface RoadmapYear {
+  year_label: string;
+  year_age: number;
+  title: string;
+  yearly_energy: string;
+  energy_tag: string;
+  quarters: RoadmapQuarter[];
+}
+
+// Full roadmap object
+export interface Roadmap {
+  summary: string;
+  current_age: number;
+  years: RoadmapYear[];
+}
+
+// API response from process-roadmap
+export interface RoadmapResponse {
+  success: boolean;
+  roadmap: Roadmap;
+}
+
+// Course info from process-find-courses
+export interface CourseInfo {
+  title: string;
+  url: string;
+  platform: string;
+}
+
+// API response from process-find-courses
+export interface CoursesResponse {
+  success: boolean;
+  courses: Record<string, CourseInfo>;
 }

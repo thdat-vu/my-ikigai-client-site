@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { RocketIcon, SparklesIcon } from "@/components/icons";
@@ -17,50 +17,48 @@ const PHASES = [
 export function StepConvergence() {
   const router = useRouter();
   const {
-    name, dateOfBirth, timeOfBirth, birthLocation,
-    mbtiType, mbtiSource, quizAnswers,
-    setGenerationProgress,
+    name, dateOfBirth, timeOfBirth,
+    mbtiType, personaGoal,
+    setRoadmap, setGenerationProgress,
   } = useOnboardingStore();
 
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const called = useRef(false);
 
   const generateRoadmap = useCallback(async () => {
+    if (called.current) return;
+    called.current = true;
+
     try {
       const res = await fetch("/api/generate-roadmap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          dateOfBirth,
-          timeOfBirth,
-          birthLocation,
-          mbtiType,
-          mbtiSource,
-          quizAnswers: mbtiSource === "quiz" ? quizAnswers : undefined,
+          dob: dateOfBirth,
+          tob: timeOfBirth || "12:00",
+          mbti: mbtiType,
+          persona_goal: personaGoal || "Find my life purpose",
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+
+      if (data.success && data.roadmap) {
+        setRoadmap(data.roadmap);
         setDone(true);
-        setTimeout(() => {
-          router.push(`/roadmap/${data.roadmapId}`);
-        }, 1500);
       } else {
+        setError(data.error || "Failed to generate roadmap");
         setDone(true);
-        setTimeout(() => {
-          router.push("/roadmap/demo");
-        }, 1500);
       }
-    } catch {
+    } catch (err) {
+      setError(String(err));
       setDone(true);
-      setTimeout(() => {
-        router.push("/roadmap/demo");
-      }, 1500);
     }
-  }, [name, dateOfBirth, timeOfBirth, birthLocation, mbtiType, mbtiSource, quizAnswers, router]);
+  }, [name, dateOfBirth, timeOfBirth, mbtiType, personaGoal, setRoadmap]);
 
   useEffect(() => {
     generateRoadmap();
@@ -68,20 +66,20 @@ export function StepConvergence() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = Math.min(prev + 2, done ? 100 : 95);
-        setGenerationProgress(next);
-        return next;
-      });
-    }, 100);
+      setProgress((prev) => Math.min(prev + 1.5, done ? 100 : 90));
+    }, 150);
     return () => clearInterval(interval);
-  }, [done, setGenerationProgress]);
+  }, [done]);
 
   useEffect(() => {
-    if (progress >= 100) return;
+    setGenerationProgress(progress);
     const phaseAt = Math.floor((progress / 100) * PHASES.length);
     setPhaseIndex(Math.min(phaseAt, PHASES.length - 1));
-  }, [progress]);
+  }, [progress, setGenerationProgress]);
+
+  const handleViewRoadmap = () => {
+    router.push("/roadmap");
+  };
 
   return (
     <motion.div
@@ -91,7 +89,7 @@ export function StepConvergence() {
       transition={{ duration: 0.6 }}
       className="relative w-full max-w-5xl mx-auto px-6"
     >
-      <div className="relative w-full aspect-video md:aspect-[21/9] min-h-[500px] rounded-[3rem] bg-[#192540]/40 backdrop-blur-3xl border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
+      <div className="relative w-full min-h-[500px] rounded-[3rem] bg-[#192540]/40 backdrop-blur-3xl border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
         {/* Background particles */}
         <div className="absolute inset-0 flex justify-around items-center opacity-30 pointer-events-none">
           <motion.div
@@ -108,9 +106,8 @@ export function StepConvergence() {
 
         {/* Central content */}
         <div className="relative flex flex-col items-center justify-center text-center p-12 z-10">
-          {/* Core orb */}
+          {/* Orbiting rings */}
           <div className="mb-8 relative">
-            {/* Orbiting rings */}
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
@@ -126,7 +123,6 @@ export function StepConvergence() {
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 bg-[#919bff]/60 rounded-full shadow-[0_0_10px_rgba(145,155,255,0.5)]" />
             </motion.div>
 
-            {/* Core icon */}
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -136,16 +132,16 @@ export function StepConvergence() {
             </motion.div>
           </div>
 
-          <h1 className="font-[Manrope] text-4xl md:text-6xl font-extrabold tracking-tighter mb-4 text-white drop-shadow-xl">
-            Decoding Destiny...
+          <h1 className="font-[Manrope] text-4xl md:text-6xl font-extrabold tracking-tighter mb-4 text-white">
+            Decoding <span className="italic">Destiny</span>
           </h1>
           <motion.p
             key={phaseIndex}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="font-[Manrope] text-xl md:text-2xl font-light text-[#a3aac4] tracking-wide max-w-2xl"
+            className="font-[Manrope] text-lg md:text-xl font-light text-[#a3aac4] tracking-wide max-w-2xl"
           >
-            {PHASES[phaseIndex]}
+            {error ? error : PHASES[phaseIndex]}
           </motion.p>
 
           {/* Progress bar */}
@@ -169,19 +165,19 @@ export function StepConvergence() {
         </div>
       </div>
 
-      {/* Generate button (visible when done) */}
-      {done && (
+      {/* Action when done */}
+      {done && progress >= 95 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 flex justify-center"
         >
           <button
-            onClick={() => router.push("/roadmap/demo")}
-            className="group relative flex items-center gap-3 px-10 py-4 bg-[#5bf4de] text-[#00594f] rounded-full font-bold text-lg shadow-[0_0_40px_rgba(91,244,222,0.4)] hover:shadow-[0_0_60px_rgba(91,244,222,0.7)] hover:scale-105 transition-all"
+            onClick={handleViewRoadmap}
+            className="group flex items-center gap-3 px-10 py-4 bg-[#5bf4de] text-[#00594f] rounded-full font-bold text-lg shadow-[0_0_40px_rgba(91,244,222,0.4)] hover:shadow-[0_0_60px_rgba(91,244,222,0.7)] hover:scale-105 transition-all"
           >
             <RocketIcon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-            View Your Roadmap
+            {error ? "View Demo Roadmap" : "View Your Roadmap"}
           </button>
         </motion.div>
       )}

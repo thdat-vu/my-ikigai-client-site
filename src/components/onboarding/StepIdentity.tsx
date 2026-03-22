@@ -5,7 +5,7 @@ import { ArrowForward } from "@/components/icons";
 import { useOnboardingStore } from "@/stores/onboarding";
 
 export function StepIdentity() {
-  const { name, setName, nextStep } = useOnboardingStore();
+  const { name, setName, personaGoal, setPersonaGoal, nextStep } = useOnboardingStore();
 
   const canContinue = name.trim().length >= 2;
 
@@ -45,16 +45,20 @@ export function StepIdentity() {
             placeholder="Type your name..."
             className="w-full bg-[#192540]/60 border-0 rounded-2xl px-8 py-6 text-2xl font-[Manrope] font-medium text-[#dee5ff] placeholder:text-[#40485d] focus:ring-2 focus:ring-[#5bf4de]/40 focus:bg-[#192540] transition-all duration-300 shadow-inner outline-none"
           />
-          {/* Progress bar under input */}
-          <div className="mt-4 flex justify-center">
-            <div className="h-1 w-24 rounded-full bg-[#192540] relative overflow-hidden">
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-[#5bf4de] shadow-[0_0_8px_rgba(91,244,222,0.5)]"
-                animate={{ width: canContinue ? "100%" : "30%" }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          </div>
+        </div>
+
+        {/* Goal input */}
+        <div className="relative w-full mt-8">
+          <label className="block text-left text-[11px] uppercase tracking-widest text-[#5bf4de]/60 mb-3 ml-4 font-medium">
+            Your Dream / Life Goal
+          </label>
+          <input
+            type="text"
+            value={personaGoal}
+            onChange={(e) => setPersonaGoal(e.target.value)}
+            placeholder="e.g. Become a Product Manager, Start my own business..."
+            className="w-full bg-[#192540]/60 border-0 rounded-2xl px-8 py-5 text-lg font-medium text-[#dee5ff] placeholder:text-[#40485d] focus:ring-2 focus:ring-[#5bf4de]/40 focus:bg-[#192540] transition-all duration-300 shadow-inner outline-none"
+          />
         </div>
 
         {/* Action buttons */}
